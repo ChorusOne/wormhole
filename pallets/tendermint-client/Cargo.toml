@@ -1,0 +1,63 @@
+[package]
+authors = ['Joe Bowman <joe@chorus.one>', 'Parth Desai <parth@chorus.one>']
+description = 'Wormhole Tendermint Client'
+edition = '2018'
+homepage = 'https://chorus.one/wormhole'
+license = 'Apache 2.0'
+name = 'tendermint-client'
+repository = 'https://github.com/ChorusOne/substrate-tendermint-client/'
+version = '0.0.1'
+
+[dependencies.clear_on_drop]
+version = "0.2.3"
+features = ["no_cc"]
+
+[dependencies.codec]
+default-features = false
+features = ['derive']
+package = 'parity-scale-codec'
+version = '1.3.0'
+
+[dependencies.frame-support]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'v2.0.0-rc2'
+version = '2.0.0-rc2'
+
+[dependencies.frame-system]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'v2.0.0-rc2'
+version = '2.0.0-rc2'
+
+[dependencies.light-client]
+default-features = false
+git = "https://github.com/joe-bowman/tendermint-rs.git"
+branch = "wasm"
+version = "0.1.0"
+
+[dev-dependencies.sp-core]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'v2.0.0-rc2'
+version = '2.0.0-rc2'
+
+[dev-dependencies.sp-io]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'v2.0.0-rc2'
+version = '2.0.0-rc2'
+
+[dev-dependencies.sp-runtime]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'v2.0.0-rc2'
+version = '2.0.0-rc2'
+
+[features]
+default = ['std']
+std = [
+    'codec/std',
+    'frame-support/std',
+    'frame-system/std',
+]
