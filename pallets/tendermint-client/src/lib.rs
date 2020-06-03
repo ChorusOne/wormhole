@@ -2,7 +2,7 @@
 
 /// Wormhole TendermintClient Pallet. Allows verification of Tendermint block headers on the substrate chain.
 
-use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch};
+use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch, ensure};
 use frame_system::{self as system, ensure_signed};
 use tendermint::{
 	block::{
@@ -10,14 +10,15 @@ use tendermint::{
 	},
 	time::Time,
 	//lite::TrustThresholdFraction,
-	//validator::Set as TMValidatorSet,
+	validator::Set,
 };
+use crypto::{sha2::Sha256, digest::Digest};
 use std::time::Duration;
 use parse_duration::parse;
 
 mod types;
 
-use crate::types::{TendermintClient, ConsensusState, TMCreateClientPayload, TMUpdateClientPayload};
+use crate::types::{TendermintClient, ConsensusState, TMCreateClientPayload, TMUpdateClientPayload, TMClientStorageWrapper};
 
 #[cfg(test)]
 mod mock;
@@ -39,10 +40,8 @@ decl_storage! {
 	// storage items are isolated from other pallets.
 	// ---------------------------------vvvvvvvvvvvvvv
 	trait Store for Module<T: Trait> as TendermintClientModule {
-		// Just a dummy storage item.
-		// Here we are declaring a StorageValue, `Something` as a Option<u32>
-		// `get(fn something)` is the default getter which returns either the stored `u32` or `None` if nothing stored
-		TMClientStorage get(fn name): Option<TendermintClient>;
+
+		TMClientStorage: map hasher(blake2_128_concat) Vec<u8> => TMClientStorageWrapper;
 	}
 }
 
@@ -50,10 +49,10 @@ decl_storage! {
 decl_event!(
 	pub enum Event<T> where AccountId = <T as system::Trait>::AccountId {
 		/// Just a dummy event.
-		/// Event `ClientCreated`/`ClientUpdated` is declared with a parameter of the type `string` (name), `string` (chainid), `u32` (height)
+		/// Event `ClientCreated`/`ClientUpdated` is declared with a parameter of the type `string` (name), `string` (chainid), `u64` (height)
 		/// To emit this event, we call the deposit function, from our runtime functions
-		ClientCreated(AccountId, String, String, u32),
-		ClientUpdated(AccountId, String, String, u32),
+		ClientCreated(AccountId, String, String, u64),
+		ClientUpdated(AccountId, String, String, u64),
 	}
 );
 
@@ -64,6 +63,12 @@ decl_error! {
 		NoneValue,
 		/// Value reached maximum and cannot be incremented further
 		StorageOverflow,
+		/// Item not found in storage.
+		ItemNotFound,
+		/// Unable to deserialize extrinsic.
+		DeserializeError,
+		/// Parsing Error occurred
+		ParseError,
 	}
 }
 
@@ -84,50 +89,59 @@ decl_module! {
 		/// function that can be called by the external world as an extrinsics call
 		/// takes Tendermint::SignedHeader, trust_period as Duration and a client_name as String, validates the SignedHeader, creates a TendermintClient and stores it, emitting an event.
 		#[weight = 100_000]
-		pub fn init_client(origin, payload: &[u8]) -> dispatch::DispatchResult {
+		pub fn init_client(origin, payload: Vec<u8>) -> dispatch::DispatchResult {
 			// Check it was signed and get the signer. See also: ensure_root and ensure_none
 			let who = ensure_signed(origin)?;
 
-			let container: TMCreateClientPayload = serde_json::from_slice(payload);
+			let container: TMCreateClientPayload = serde_json::from_slice(&payload[..]).map_err(|_e| Error::<T>::DeserializeError)?;
 
 			let header: SignedHeader = container.header;
-			let trust_period: Duration = parse(container.trust_period.clone());
+			let trust_period: Duration = parse(&container.trust_period).map_err(|_e| Error::<T>::ParseError)?;
 			// validate header
 			// validate client name
 			// validate trust_period
 			let state: ConsensusState = ConsensusState{
-				header: header,
-				height: header.header.height,
+				signed_header: header.clone(),
+				height: header.header.height.value(),
+				last_update: Time::now(),
+				next_validator_set: Set::new(vec![]) // TODO: populate this!
 			};
 
 			let tmclient: TendermintClient = TendermintClient{
-				state: state,
-				trust_period: trust_period,
+				state: Some(state.clone()),
+				trusting_period: trust_period,
 				client_name: container.client_name.clone(),
-				chain_id: header.header.chain_id,
+				chain_id: header.header.chain_id.to_string(),
 			};
 
-			TMClientStorage::put(tmclient);
+			let mut hasher = Sha256::new();
+			hasher.input_str(&container.client_name);
+			let key = hasher.result_str();
+			TMClientStorage::insert(key.as_bytes(), TMClientStorageWrapper{client: tmclient.clone()});
 
 			// Here we are raising the ClientCreated event
-			Self::deposit_event(RawEvent::ClientCreated(who, tmclient.client_name, tmclient.chain_id, tmclient.height));
+			Self::deposit_event(RawEvent::ClientCreated(who, tmclient.client_name, tmclient.chain_id, state.height));
 			Ok(())
 		}
 
 		/// Another dummy entry point.
 		/// takes no parameters, attempts to increment storage value, and possibly throws an error
 		#[weight = 100_000]
-		pub fn update_client(origin, payload: TMUpdateClientPayload) -> dispatch::DispatchResult {
+		pub fn update_client(origin, payload: Vec<u8>) -> dispatch::DispatchResult {
+
+			let container: TMUpdateClientPayload = serde_json::from_slice(&payload[..]).map_err(|_e| Error::<T>::DeserializeError)?;
+
 			// Check it was signed and get the signer. See also: ensure_root and ensure_none
 			let _who = ensure_signed(origin)?;
+			let mut hasher = Sha256::new();
+			hasher.input_str(&container.client_name);
+			let key = hasher.result_str();
+			ensure!(TMClientStorage::contains_key(key.as_bytes()), Error::<T>::ItemNotFound);
 
-			match TMClientStorage::get() {
-				None => Err(Error::<T>::NoneValue)?,
-				Some(old) => {
+            // Get owner of the claim
+            let _wrapped_client: TMClientStorageWrapper = TMClientStorage::get(key.as_bytes());
 
-					Ok(())
-				},
-			}
+			Ok(())
 		}
 	}
 }

@@ -39,6 +39,7 @@ pub use frame_support::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
 	},
 };
+pub use
 
 /// Importing a template pallet
 pub use template;
