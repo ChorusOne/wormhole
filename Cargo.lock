@@ -2851,6 +2851,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "num"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8536030f9fea7127f841b45bb6243b27255787fb4eb83958aa1ef9d2fdc0c36"
+dependencies = [
+ "num-bigint",
+ "num-complex",
+ "num-integer",
+ "num-iter",
+ "num-rational",
+ "num-traits 0.2.11",
+]
+
+[[package]]
 name = "num-bigint"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2878,6 +2892,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f6ea62e9d81a77cd3ee9a2a5b9b609447857f3d358704331e4ef39eb247fcba"
 dependencies = [
  "autocfg 1.0.0",
+ "num-traits 0.2.11",
+]
+
+[[package]]
+name = "num-iter"
+version = "0.1.40"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dfb0800a0291891dd9f4fe7bd9c19384f98f7fbe0cd0f39a2c6b88b9868bbc00"
+dependencies = [
+ "autocfg 1.0.0",
+ "num-integer",
  "num-traits 0.2.11",
 ]
 
@@ -3304,6 +3329,17 @@ dependencies = [
  "redox_syscall",
  "smallvec 1.4.0",
  "winapi 0.3.8",
+]
+
+[[package]]
+name = "parse_duration"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dc8d8324ba4f571dbac55dea78c76f72681fcc488b51a9ee7ddb10263e7e92ae"
+dependencies = [
+ "lazy_static",
+ "num",
+ "regex",
 ]
 
 [[package]]
@@ -6075,9 +6111,13 @@ dependencies = [
  "frame-system",
  "light-client",
  "parity-scale-codec",
+ "parse_duration",
+ "serde",
+ "serde_json",
  "sp-core",
  "sp-io",
  "sp-runtime",
+ "tendermint",
 ]
 
 [[package]]

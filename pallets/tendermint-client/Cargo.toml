@@ -8,6 +8,11 @@ name = 'tendermint-client'
 repository = 'https://github.com/ChorusOne/substrate-tendermint-client/'
 version = '0.0.1'
 
+[dependencies]
+serde = '1'
+serde_json = "1.0.53"
+parse_duration = "2.1.0"
+
 [dependencies.clear_on_drop]
 version = "0.2.3"
 features = ["no_cc"]
@@ -35,6 +40,12 @@ default-features = false
 git = "https://github.com/joe-bowman/tendermint-rs.git"
 branch = "wasm"
 version = "0.1.0"
+
+[dependencies.tendermint]
+default-features = false
+git = "https://github.com/joe-bowman/tendermint-rs.git"
+branch = "wasm"
+version = "0.13.0"
 
 [dev-dependencies.sp-core]
 default-features = false
