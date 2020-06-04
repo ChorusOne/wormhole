@@ -1,6 +1,7 @@
 use serde::{Serialize, Deserialize};
 use codec::{Encode, Decode, Input, Output, Error, EncodeLike};
-use std::{time::Duration, default::Default};
+use sp_std::{default::Default, vec::Vec};
+
 use tendermint::{
     block::{
         signed_header::SignedHeader,
@@ -13,14 +14,14 @@ use tendermint::{
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TMCreateClientPayload {
     pub header: SignedHeader,
-    pub trust_period: String,
-    pub client_name: String,
+    pub trust_period: u64,
+    pub client_name: Vec<u8>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TMUpdateClientPayload {
     pub header: SignedHeader,
-    pub client_name: String,
+    pub client_name: Vec<u8>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -34,18 +35,18 @@ pub struct ConsensusState {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TendermintClient {
     pub state: Option<ConsensusState>,
-    pub client_name: String,
-    pub chain_id: String,
-    pub trusting_period: Duration,
+    pub client_name: Vec<u8>,
+    pub chain_id: Vec<u8>,
+    pub trusting_period: u64,
 }
 
 impl Default for TendermintClient {
     fn default() -> Self {
         TendermintClient {
             state: None,
-            client_name: String::default(),
-            chain_id: String::default(),
-            trusting_period: Duration::from_secs(0),
+            client_name: Vec::new(),
+            chain_id: Vec::new(),
+            trusting_period: 86400,
         }
     }
 }

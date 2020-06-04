@@ -96,6 +96,7 @@ default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'v2.0.0-rc2'
 version = '2.0.0-rc2'
+features = ['disable_panic_handler', 'disable_oom']
 
 [dependencies.sp-offchain]
 default-features = false
@@ -147,11 +148,11 @@ package = 'frame-system'
 tag = 'v2.0.0-rc2'
 version = '2.0.0-rc2'
 
-[dependencies.template]
+[dependencies.tendermint-client]
 default-features = false
-package = 'pallet-template'
-path = '../pallets/template'
-version = '2.0.0-rc2'
+package = 'tendermint-client'
+path = '../pallets/tendermint-client'
+version = '0.0.1'
 
 [dependencies.timestamp]
 default-features = false
@@ -194,7 +195,7 @@ std = [
     'system/std',
     'timestamp/std',
     'transaction-payment/std',
-    'template/std',
+    'tendermint-client/std',
 ]
 
 [build-dependencies.wasm-builder-runner]

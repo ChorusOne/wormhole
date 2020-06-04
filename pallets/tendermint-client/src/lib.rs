@@ -12,9 +12,10 @@ use tendermint::{
 	//lite::TrustThresholdFraction,
 	validator::Set,
 };
-use crypto::{sha2::Sha256, digest::Digest};
-use std::time::Duration;
-use parse_duration::parse;
+use sha2::{Sha256, Digest};
+#[macro_use]
+extern crate alloc;
+use  sp_std::vec::Vec;
 
 mod types;
 
@@ -51,8 +52,8 @@ decl_event!(
 		/// Just a dummy event.
 		/// Event `ClientCreated`/`ClientUpdated` is declared with a parameter of the type `string` (name), `string` (chainid), `u64` (height)
 		/// To emit this event, we call the deposit function, from our runtime functions
-		ClientCreated(AccountId, String, String, u64),
-		ClientUpdated(AccountId, String, String, u64),
+		ClientCreated(AccountId, Vec<u8>, Vec<u8>, u64),
+		ClientUpdated(AccountId, Vec<u8>, Vec<u8>, u64),
 	}
 );
 
@@ -96,7 +97,7 @@ decl_module! {
 			let container: TMCreateClientPayload = serde_json::from_slice(&payload[..]).map_err(|_e| Error::<T>::DeserializeError)?;
 
 			let header: SignedHeader = container.header;
-			let trust_period: Duration = parse(&container.trust_period).map_err(|_e| Error::<T>::ParseError)?;
+			let trust_period: u64 = container.trust_period;
 			// validate header
 			// validate client name
 			// validate trust_period
@@ -111,13 +112,13 @@ decl_module! {
 				state: Some(state.clone()),
 				trusting_period: trust_period,
 				client_name: container.client_name.clone(),
-				chain_id: header.header.chain_id.to_string(),
+				chain_id: header.header.chain_id.as_bytes().to_vec(),
 			};
 
 			let mut hasher = Sha256::new();
-			hasher.input_str(&container.client_name);
-			let key = hasher.result_str();
-			TMClientStorage::insert(key.as_bytes(), TMClientStorageWrapper{client: tmclient.clone()});
+			hasher.input(&container.client_name);
+			let key = hasher.result();
+			TMClientStorage::insert(key.as_slice(), TMClientStorageWrapper{client: tmclient.clone()});
 
 			// Here we are raising the ClientCreated event
 			Self::deposit_event(RawEvent::ClientCreated(who, tmclient.client_name, tmclient.chain_id, state.height));
@@ -134,12 +135,12 @@ decl_module! {
 			// Check it was signed and get the signer. See also: ensure_root and ensure_none
 			let _who = ensure_signed(origin)?;
 			let mut hasher = Sha256::new();
-			hasher.input_str(&container.client_name);
-			let key = hasher.result_str();
-			ensure!(TMClientStorage::contains_key(key.as_bytes()), Error::<T>::ItemNotFound);
+			hasher.input(&container.client_name);
+			let key = hasher.result();
+			ensure!(TMClientStorage::contains_key(key.as_slice()), Error::<T>::ItemNotFound);
 
             // Get owner of the claim
-            let _wrapped_client: TMClientStorageWrapper = TMClientStorage::get(key.as_bytes());
+            let _wrapped_client: TMClientStorageWrapper = TMClientStorage::get(key.as_slice());
 
 			Ok(())
 		}
