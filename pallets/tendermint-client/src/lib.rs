@@ -1,4 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+#![feature(vec_resize_default)]
 
 /// Wormhole TendermintClient Pallet. Allows verification of Tendermint block headers on the substrate chain.
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, dispatch, ensure};
@@ -137,11 +138,11 @@ decl_module! {
                 trust_threshold: TrustThresholdFraction::default(),
             };
 
-            let mut hasher = Sha256::new();
-            hasher.input(&container.client_id);
-            let key = hasher.result();
-
-            TMClientStorage::insert(key.as_slice(), TMClientStorageWrapper{client: tmclient.clone()});
+            // let mut hasher = Sha256::new();
+            // hasher.input();
+            // let key = hasher.result();
+            info!("storing: {:#?}", tmclient);
+            TMClientStorage::insert(container.client_id.as_slice(), TMClientStorageWrapper{client: tmclient.clone()});
             // TODO: does this error if the key already exists?
 
             // Here we are raising the ClientCreated event
@@ -154,7 +155,7 @@ decl_module! {
         pub fn update_client(origin, payload: Vec<u8>) -> dispatch::DispatchResult {
 
             // Check it was signed and get the signer. See also: ensure_root and ensure_none
-            let _who = ensure_signed(origin)?;
+            let who = ensure_signed(origin)?;
 
             let r: Result<_, _> = serde_json::from_slice(&payload[..]);
             let container: TMUpdateClientPayload = r.map_err(|e| {
@@ -162,14 +163,14 @@ decl_module! {
               Error::<T>::DeserializeError
             })?;
 
-            let mut hasher = Sha256::new();
-            hasher.input(&container.client_id);
-            let key = hasher.result();
+            // let mut hasher = Sha256::new();
+            // hasher.input();
+            // let key = hasher.result();
 
-            ensure!(TMClientStorage::contains_key(key.as_slice()), Error::<T>::ItemNotFound);
+            ensure!(TMClientStorage::contains_key(container.client_id.as_slice()), Error::<T>::ItemNotFound);
 
-            let mut wrapped_client: TMClientStorageWrapper = TMClientStorage::get(key.as_slice());
-            info!("{:#?}", wrapped_client);
+            let mut wrapped_client: TMClientStorageWrapper = TMClientStorage::get(container.client_id.as_slice());
+            info!("Fetched from storage: {:#?}", wrapped_client);
             let header: LightSignedHeader = container.header.signed_header;
             let validator_set: LightValidatorSet = container.header.validator_set;
 
@@ -192,7 +193,8 @@ decl_module! {
                 last_update: Utc::now(),
             };
             wrapped_client.client.state = Some(state.clone());
-            TMClientStorage::insert(key.as_slice(), wrapped_client.clone());
+            TMClientStorage::insert(container.client_id.as_slice(), wrapped_client.clone());
+            Self::deposit_event(RawEvent::ClientUpdated(who, wrapped_client.client.client_id, wrapped_client.client.chain_id, header.header().height.value()));
             Ok(())
         }
     }

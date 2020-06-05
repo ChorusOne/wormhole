@@ -7,6 +7,7 @@ use tendermint_light_client::{
     Commit, LightHeader, LightSignedHeader, LightValidatorSet, TrustThresholdFraction,
     TrustedState,
 };
+use log::{debug, error, info};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TMHeader {
@@ -74,11 +75,17 @@ impl Encode for TMClientStorageWrapper {
     }
 }
 
+#[allow(deprecated)]
 impl Decode for TMClientStorageWrapper {
     fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
-        let bytes: Vec<u8> = Vec::decode(input)?;
+
+        let len = input.remaining_len().unwrap().ok_or_else(|| "meh")?;
+        let mut vec: Vec<u8> = Vec::with_capacity(len);
+        vec.resize_default(len);
+        let buf = vec.as_mut_slice();
+        input.read(buf)?;
         Ok(TMClientStorageWrapper {
-            client: serde_json::from_slice(&bytes[..]).ok().unwrap(),
+            client: serde_json::from_slice(&vec[..]).ok().unwrap(),
         })
     }
 }
