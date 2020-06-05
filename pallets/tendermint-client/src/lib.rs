@@ -15,7 +15,7 @@ use tendermint_light_client::{
 extern crate alloc;
 extern crate core;
 extern crate std;
-use log::{debug, error};
+use log::{debug, error, info};
 use sp_std::vec::Vec;
 
 mod types;
@@ -109,20 +109,21 @@ decl_module! {
               Error::<T>::DeserializeError
             })?;
             let header: LightSignedHeader = container.header.signed_header;
+            let validator_set: LightValidatorSet = container.header.validator_set;
             let chain_id = header.header().chain_id.clone();
             let trust_period: u64 = container.trusting_period;
             let max_clock_drift: u64 = container.max_clock_drift;
             let unbonding_period: u64 = container.unbonding_period;
 
-            tendermint_light_client::verify_commit_full(&container.validator_set, header.header(), header.commit()).map_err(|e| {
+            verify_commit_full(&validator_set, header.header(), header.commit()).map_err(|e| {
               error!("Validation Error: {}", e);
               Error::<T>::ValidationError
-            });
+            })?;
 
             // TODO:  validate client name
             // TODO:  validate trust_period
             let state: ConsensusState = ConsensusState{
-                state: 	TrustedState::new(header.clone(), container.validator_set),
+                state: 	TrustedState::new(header.clone(), validator_set),
                 last_update: Utc::now(),
             };
 
@@ -168,13 +169,14 @@ decl_module! {
             ensure!(TMClientStorage::contains_key(key.as_slice()), Error::<T>::ItemNotFound);
 
             let mut wrapped_client: TMClientStorageWrapper = TMClientStorage::get(key.as_slice());
-
+            info!("{:#?}", wrapped_client);
             let header: LightSignedHeader = container.header.signed_header;
+            let validator_set: LightValidatorSet = container.header.validator_set;
 
-            let trusted_state = tendermint_light_client::verify_single(
+            let trusted_state = verify_single(
                 wrapped_client.client.state.unwrap().state.clone(),
                 &header,
-                &container.validator_set,
+                &validator_set,
                 &container.next_validator_set,
                 wrapped_client.client.trust_threshold,
                 Duration::from_secs(wrapped_client.client.trusting_period+wrapped_client.client.max_clock_drift),
