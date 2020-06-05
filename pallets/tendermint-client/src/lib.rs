@@ -4,16 +4,18 @@
 
 use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch, ensure};
 use frame_system::{self as system, ensure_signed};
-use tendermint::{
-	block::{
-		signed_header::SignedHeader,
-	},
-	time::Time,
+
+use tendermint_light_client::{
+	LightSignedHeader, LightValidatorSet, verify_commit_full, verify_single, TrustedState, TrustThresholdFraction,
 };
+use chrono::{Utc};
+use core::time::Duration;
 use sha2::{Sha256, Digest};
-#[macro_use]
+
 extern crate alloc;
-use  sp_std::vec::Vec;
+extern crate core;
+extern crate std;
+use sp_std::vec::Vec;
 use log::{error, debug};
 
 mod types;
@@ -69,6 +71,8 @@ decl_error! {
 		DeserializeError,
 		/// Parsing Error occurred
 		ParseError,
+		/// Error occurred validating block.
+		ValidationError,
 	}
 }
 
@@ -98,18 +102,21 @@ decl_module! {
 			  error!("Deserialization Error: {}", e);
 			  Error::<T>::DeserializeError
 			})?;
-			let header: SignedHeader = container.header.signed_header;
+			let header: LightSignedHeader = container.header.signed_header;
 			let trust_period: u64 = container.trusting_period;
 			let max_clock_drift: u64 = container.max_clock_drift;
 			let unbonding_period: u64 = container.unbonding_period;
-			// TODO:  validate header
+
+			tendermint_light_client::verify_commit_full(&container.validator_set, &header).map_err(|e| {
+			  error!("Validation Error: {}", e);
+			  Error::<T>::ValidationError
+			});
+
 			// TODO:  validate client name
 			// TODO:  validate trust_period
 			let state: ConsensusState = ConsensusState{
-				signed_header: header.clone(),
-				height: header.header.height.value(),
-				last_update: Time::now(),
-				next_validator_set: container.validator_set
+				state: 	TrustedState::new(header, container.validator_set),
+				last_update: Utc::now(),
 			};
 
 			let tmclient: TendermintClient = TendermintClient{
@@ -119,6 +126,7 @@ decl_module! {
 				max_clock_drift: max_clock_drift,
 				unbonding_period: unbonding_period,
 				chain_id: header.header.chain_id.as_bytes().to_vec(),
+				trust_threshold: TrustThresholdFraction::default(),
 			};
 
 			let mut hasher = Sha256::new();
@@ -129,7 +137,7 @@ decl_module! {
 			// TODO: does this error if the key already exists?
 
 			// Here we are raising the ClientCreated event
-			Self::deposit_event(RawEvent::ClientCreated(who, tmclient.client_id, tmclient.chain_id, state.height));
+			Self::deposit_event(RawEvent::ClientCreated(who, tmclient.client_id, tmclient.chain_id, header.header.height.value()));
 			Ok(())
 		}
 
@@ -154,14 +162,25 @@ decl_module! {
 
             let mut wrapped_client: TMClientStorageWrapper = TMClientStorage::get(key.as_slice());
 
-			let header: SignedHeader = container.header.signed_header;
+			let header: LightSignedHeader = container.header.signed_header;
+
+			let trusted_state = tendermint_light_client::verify_single(
+				wrapped_client.client.state.unwrap().state.clone(),
+				&header,
+				&container.validator_set,
+				&container.next_validator_set,
+				wrapped_client.client.trust_threshold,
+				Duration::from_secs(wrapped_client.client.trusting_period+wrapped_client.client.max_clock_drift),
+				std::time::SystemTime::now(),
+			).map_err(|e| {
+				error!("Unable to validate header: {}", e);
+				Error::<T>::ValidationError
+			})?;
 
 			// TODO:  validate header
 			let state: ConsensusState = ConsensusState{
-				signed_header: header.clone(),
-				height: header.header.height.value(),
-				last_update: Time::now(),
-				next_validator_set: wrapped_client.client.state.unwrap().next_validator_set // TODO: handle validator set changes?
+				state: trusted_state,
+				last_update: Utc::now(),
 			};
 			wrapped_client.client.state = Some(state.clone());
 			TMClientStorage::insert(key.as_slice(), wrapped_client.clone());

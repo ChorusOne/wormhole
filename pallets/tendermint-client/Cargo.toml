@@ -10,22 +10,10 @@ version = '0.0.1'
 
 [dependencies]
 serde = {version = '1', default-features = false }
-serde_json = {version = '1', default-features = false }
+serde_json = {version = '1', default-features = false, features = ['alloc'] }
 sha2 = { version =  "0.8", default-features = false }
-log = "0.4.8"
-
-[dependencies.lazy_static]
-version = "1.4.0"
-features = ['spin_no_std']
-
-[dependencies.slab]
-version = "0.4.2"
-git = "https://github.com/baloo/slab"
-branch = "baloo/no_std-support"
-
-[dependencies.clear_on_drop]
-version = "0.2.3"
-features = ["no_cc"]
+log = { version = "0.4.8", default-features = false }
+chrono = { version = "0.4.11", default-features = false }
 
 [dependencies.codec]
 default-features = false
@@ -45,17 +33,11 @@ git = 'https://github.com/paritytech/substrate.git'
 tag = 'v2.0.0-rc2'
 version = '2.0.0-rc2'
 
-[dependencies.light-client]
+[dependencies.tendermint_light_client]
 default-features = false
-git = "https://github.com/joe-bowman/tendermint-rs.git"
-branch = "wasm"
-version = "0.1.0"
-
-[dependencies.tendermint]
-default-features = false
-git = "https://github.com/joe-bowman/tendermint-rs.git"
-branch = "wasm"
-version = "0.13.0"
+git = "https://github.com/ChorusOne/tendermint_light_client.git"
+branch = "master"
+version = "0.1.5"
 
 [dev-dependencies.sp-core]
 default-features = false
@@ -69,7 +51,7 @@ git = 'https://github.com/paritytech/substrate.git'
 tag = 'v2.0.0-rc2'
 version = '2.0.0-rc2'
 
-[dependencies.sp-io]
+[dev-dependencies.sp-io]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'v2.0.0-rc2'

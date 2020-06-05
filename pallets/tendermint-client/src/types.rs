@@ -2,24 +2,25 @@ use serde::{Serialize, Deserialize};
 use codec::{Encode, Decode, Input, Output, Error, EncodeLike};
 use sp_std::{default::Default, vec::Vec};
 
-use tendermint::{
-    block::{
-        signed_header::SignedHeader,
-    },
-    time::Time,
-    //lite::TrustThresholdFraction,
-    validator::Set as ValidatorSet,
+use tendermint_light_client::{
+    LightSignedHeader,
+    LightValidatorSet,
+    LightHeader,
+    TrustThresholdFraction,
+    TrustedState,
+    Time,
 };
+use chrono::{DateTime, Utc, Duration};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TMHeader {
-    pub signed_header: SignedHeader,
+    pub signed_header: LightSignedHeader,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TMCreateClientPayload {
     pub header: TMHeader,
-    pub validator_set: ValidatorSet,
+    pub validator_set: LightValidatorSet,
     pub trusting_period: u64,
     pub max_clock_drift: u64,
     pub unbonding_period: u64,
@@ -30,14 +31,14 @@ pub struct TMCreateClientPayload {
 pub struct TMUpdateClientPayload {
     pub header: TMHeader,
     pub client_id: Vec<u8>,
+    pub validator_set: LightValidatorSet,
+    pub next_validator_set: LightValidatorSet,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ConsensusState {
-    pub signed_header: SignedHeader,
-    pub next_validator_set: ValidatorSet,
-    pub height: u64,
-    pub last_update: Time,
+    pub state: TrustedState<LightSignedHeader,LightHeader>,
+    pub last_update: DateTime<Utc>
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -48,10 +49,9 @@ pub struct TendermintClient {
     pub trusting_period: u64,
     pub max_clock_drift: u64,
     pub unbonding_period: u64,
+    pub trust_threshold: TrustThresholdFraction,
     //pub owner: cosmosAddress,
 }
-
-
 
 impl Default for TendermintClient {
     fn default() -> Self {
@@ -61,7 +61,9 @@ impl Default for TendermintClient {
             chain_id: Vec::new(),
             trusting_period: 86400,
             max_clock_drift: 30,
-            unbonding_period: 86400*7*3
+            unbonding_period: 86400*7*3,
+            trust_threshold: TrustThresholdFraction::default(),
+
         }
     }
 }
