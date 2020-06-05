@@ -1,16 +1,12 @@
-use serde::{Serialize, Deserialize};
-use codec::{Encode, Decode, Input, Output, Error, EncodeLike};
+use codec::{Decode, Encode, EncodeLike, Error, Input, Output};
+use serde::{Deserialize, Serialize};
 use sp_std::{default::Default, vec::Vec};
 
+use chrono::{DateTime, Duration, Utc};
 use tendermint_light_client::{
-    LightSignedHeader,
-    LightValidatorSet,
-    LightHeader,
-    TrustThresholdFraction,
+    Commit, LightHeader, LightSignedHeader, LightValidatorSet, Time, TrustThresholdFraction,
     TrustedState,
-    Time,
 };
-use chrono::{DateTime, Utc, Duration};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TMHeader {
@@ -37,8 +33,8 @@ pub struct TMUpdateClientPayload {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ConsensusState {
-    pub state: TrustedState<LightSignedHeader,LightHeader>,
-    pub last_update: DateTime<Utc>
+    pub state: TrustedState<Commit, LightHeader>,
+    pub last_update: DateTime<Utc>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -61,16 +57,15 @@ impl Default for TendermintClient {
             chain_id: Vec::new(),
             trusting_period: 86400,
             max_clock_drift: 30,
-            unbonding_period: 86400*7*3,
+            unbonding_period: 86400 * 7 * 3,
             trust_threshold: TrustThresholdFraction::default(),
-
         }
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct TMClientStorageWrapper {
-    pub client: TendermintClient
+    pub client: TendermintClient,
 }
 
 impl Encode for TMClientStorageWrapper {
@@ -83,7 +78,9 @@ impl Encode for TMClientStorageWrapper {
 impl Decode for TMClientStorageWrapper {
     fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
         let bytes: Vec<u8> = Vec::decode(input)?;
-        Ok(TMClientStorageWrapper{client: serde_json::from_slice(&bytes[..]).ok().unwrap()})
+        Ok(TMClientStorageWrapper {
+            client: serde_json::from_slice(&bytes[..]).ok().unwrap(),
+        })
     }
 }
 

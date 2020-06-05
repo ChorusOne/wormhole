@@ -37,7 +37,7 @@ version = '2.0.0-rc2'
 default-features = false
 git = "https://github.com/ChorusOne/tendermint_light_client.git"
 branch = "master"
-version = "0.1.5"
+version = "0.1.6"
 
 [dev-dependencies.sp-core]
 default-features = false
