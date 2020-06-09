@@ -9,8 +9,8 @@ use chrono::Utc;
 use core::time::Duration;
 use sha2::{Digest, Sha256};
 use tendermint_light_client::{
-    verify_commit_full, verify_single, LightSignedHeader, LightValidatorSet,
-    TrustThresholdFraction, TrustedState,
+    validate_initial_signed_header_and_valset, verify_single, LightSignedHeader, LightValidatorSet,
+    TrustThresholdFraction, TrustedState, LightValidator
 };
 
 extern crate alloc;
@@ -110,13 +110,13 @@ decl_module! {
               Error::<T>::DeserializeError
             })?;
             let header: LightSignedHeader = container.header.signed_header;
-            let validator_set: LightValidatorSet = container.header.validator_set;
+            let validator_set: LightValidatorSet<LightValidator> = container.header.validator_set;
             let chain_id = header.header().chain_id.clone();
             let trust_period: u64 = container.trusting_period;
             let max_clock_drift: u64 = container.max_clock_drift;
             let unbonding_period: u64 = container.unbonding_period;
 
-            verify_commit_full(&validator_set, header.header(), header.commit()).map_err(|e| {
+            validate_initial_signed_header_and_valset(&header, &validator_set).map_err(|e| {
               error!("Validation Error: {}", e);
               Error::<T>::ValidationError
             })?;
@@ -172,7 +172,7 @@ decl_module! {
             let mut wrapped_client: TMClientStorageWrapper = TMClientStorage::get(container.client_id.as_slice());
             info!("Fetched from storage: {:#?}", wrapped_client);
             let header: LightSignedHeader = container.header.signed_header;
-            let validator_set: LightValidatorSet = container.header.validator_set;
+            let validator_set: LightValidatorSet<LightValidator> = container.header.validator_set;
 
             let trusted_state = verify_single(
                 wrapped_client.client.state.unwrap().state.clone(),

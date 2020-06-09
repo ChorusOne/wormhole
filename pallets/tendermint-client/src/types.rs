@@ -5,14 +5,14 @@ use sp_std::{default::Default, vec::Vec};
 use chrono::{DateTime, Utc};
 use tendermint_light_client::{
     Commit, LightHeader, LightSignedHeader, LightValidatorSet, TrustThresholdFraction,
-    TrustedState,
+    TrustedState, LightValidator
 };
 use log::{debug, error, info};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TMHeader {
     pub signed_header: LightSignedHeader,
-    pub validator_set: LightValidatorSet,
+    pub validator_set: LightValidatorSet<LightValidator>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -28,12 +28,12 @@ pub struct TMCreateClientPayload {
 pub struct TMUpdateClientPayload {
     pub header: TMHeader,
     pub client_id: Vec<u8>,
-    pub next_validator_set: LightValidatorSet,
+    pub next_validator_set: LightValidatorSet<LightValidator>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ConsensusState {
-    pub state: TrustedState<Commit, LightHeader>,
+    pub state: TrustedState<Commit, LightHeader, LightValidator>,
     pub last_update: DateTime<Utc>,
 }
 
