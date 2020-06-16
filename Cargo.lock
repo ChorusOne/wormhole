@@ -5838,8 +5838,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint_light_client"
-version = "0.1.6"
-source = "git+https://github.com/ChorusOne/tendermint_light_client.git#2f4c1eab66a0ee2dcc627a7615e9feb160207f8a"
+version = "0.2.0"
+source = "git+https://github.com/ChorusOne/tendermint_light_client.git#3ca4ce374405b259b612d06a867c1ab215d3adb5"
 dependencies = [
  "anomaly",
  "chrono",
