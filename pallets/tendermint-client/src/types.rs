@@ -1,13 +1,12 @@
 use codec::{Decode, Encode, EncodeLike, Error, Input, Output};
+use sp_std::{default::Default, vec::Vec, str::FromStr};
 use serde::{Deserialize, Serialize};
-use sp_std::{default::Default, vec::Vec};
 
 use chrono::{DateTime, Utc};
 use tendermint_light_client::{
     Commit, LightHeader, LightSignedHeader, LightValidatorSet, TrustThresholdFraction,
-    TrustedState, LightValidator
+    TrustedState, LightValidator, ClientId,
 };
-use log::{debug, error, info};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TMHeader {
@@ -21,13 +20,13 @@ pub struct TMCreateClientPayload {
     pub trusting_period: u64,
     pub max_clock_drift: u64,
     pub unbonding_period: u64,
-    pub client_id: Vec<u8>,
+    pub client_id: ClientId,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TMUpdateClientPayload {
     pub header: TMHeader,
-    pub client_id: Vec<u8>,
+    pub client_id: ClientId,
     pub next_validator_set: LightValidatorSet<LightValidator>,
 }
 

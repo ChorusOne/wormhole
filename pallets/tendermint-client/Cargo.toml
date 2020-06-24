@@ -9,7 +9,7 @@ repository = 'https://github.com/ChorusOne/substrate-tendermint-client/'
 version = '0.0.1'
 
 [dependencies]
-serde = {version = '1', default-features = false }
+serde = {version = '1', default-features = false, features = ['derive', 'alloc'] }
 serde_json = {version = '1', default-features = false, features = ['alloc'] }
 sha2 = { version =  "0.8", default-features = false }
 log = { version = "0.4.8", default-features = false }
@@ -36,8 +36,8 @@ version = '2.0.0-rc2'
 [dependencies.tendermint_light_client]
 default-features = false
 git = "https://github.com/ChorusOne/tendermint_light_client.git"
-branch = "master"
-version = "0.2.0"
+branch = "client"
+version = "0.2.3"
 
 [dev-dependencies.sp-core]
 default-features = false

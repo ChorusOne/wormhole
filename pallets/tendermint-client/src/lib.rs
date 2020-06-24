@@ -7,7 +7,6 @@ use frame_system::{self as system, ensure_signed};
 
 use chrono::Utc;
 use core::time::Duration;
-use sha2::{Digest, Sha256};
 use tendermint_light_client::{
     validate_initial_signed_header_and_valset, verify_single, LightSignedHeader, LightValidatorSet,
     TrustThresholdFraction, TrustedState, LightValidator
@@ -131,10 +130,10 @@ decl_module! {
             let tmclient: TendermintClient = TendermintClient{
                 state: Some(state.clone()),
                 trusting_period: trust_period,
-                client_id: container.client_id.clone(),
+                client_id: container.client_id.as_bytes().to_vec(),
                 max_clock_drift: max_clock_drift,
                 unbonding_period: unbonding_period,
-                chain_id: chain_id.as_bytes().to_vec(),
+                chain_id: chain_id.as_str().as_bytes().to_vec(),
                 trust_threshold: TrustThresholdFraction::default(),
             };
 
@@ -142,7 +141,7 @@ decl_module! {
             // hasher.input();
             // let key = hasher.result();
             info!("storing: {:#?}", tmclient);
-            TMClientStorage::insert(container.client_id.as_slice(), TMClientStorageWrapper{client: tmclient.clone()});
+            TMClientStorage::insert(container.client_id.as_bytes().to_vec(), TMClientStorageWrapper{client: tmclient.clone()});
             // TODO: does this error if the key already exists?
 
             // Here we are raising the ClientCreated event
@@ -167,9 +166,9 @@ decl_module! {
             // hasher.input();
             // let key = hasher.result();
 
-            ensure!(TMClientStorage::contains_key(container.client_id.as_slice()), Error::<T>::ItemNotFound);
+            ensure!(TMClientStorage::contains_key(container.client_id.as_bytes().to_vec()), Error::<T>::ItemNotFound);
 
-            let mut wrapped_client: TMClientStorageWrapper = TMClientStorage::get(container.client_id.as_slice());
+            let mut wrapped_client: TMClientStorageWrapper = TMClientStorage::get(container.client_id.as_bytes().to_vec());
             info!("Fetched from storage: {:#?}", wrapped_client);
             let header: LightSignedHeader = container.header.signed_header;
             let validator_set: LightValidatorSet<LightValidator> = container.header.validator_set;
@@ -193,7 +192,7 @@ decl_module! {
                 last_update: Utc::now(),
             };
             wrapped_client.client.state = Some(state.clone());
-            TMClientStorage::insert(container.client_id.as_slice(), wrapped_client.clone());
+            TMClientStorage::insert(container.client_id.as_bytes().to_vec(), wrapped_client.clone());
             Self::deposit_event(RawEvent::ClientUpdated(who, wrapped_client.client.client_id, wrapped_client.client.chain_id, header.header().height.value()));
             Ok(())
         }
