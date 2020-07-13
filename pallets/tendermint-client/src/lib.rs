@@ -55,12 +55,13 @@ decl_event!(
     pub enum Event<T>
     where
         AccountId = <T as system::Trait>::AccountId,
+        Height = u64
     {
         /// Just a dummy event.
         /// Event `ClientCreated`/`ClientUpdated` is declared with a parameter of the type `string` (name), `string` (chainid), `u64` (height)
         /// To emit this event, we call the deposit function, from our runtime functions
-        ClientCreated(AccountId, Vec<u8>, Vec<u8>, u64),
-        ClientUpdated(AccountId, Vec<u8>, Vec<u8>, u64),
+        ClientCreated(AccountId, Vec<u8>, Vec<u8>, Height),
+        ClientUpdated(AccountId, Vec<u8>, Vec<u8>, Height),
     }
 );
 
