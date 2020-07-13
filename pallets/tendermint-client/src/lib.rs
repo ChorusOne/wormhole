@@ -74,6 +74,8 @@ decl_error! {
         StorageOverflow,
         /// Item not found in storage.
         ItemNotFound,
+        /// Client already initialized,
+        ClientAlreadyInitialized,
         /// Unable to deserialize extrinsic.
         DeserializeError,
         /// Parsing Error occurred
@@ -109,6 +111,9 @@ decl_module! {
               error!("Deserialization Error: {}", e);
               Error::<T>::DeserializeError
             })?;
+
+            ensure!(!TMClientStorage::contains_key(container.client_id.as_bytes().to_vec()), Error::<T>::ClientAlreadyInitialized);
+
             let header: LightSignedHeader = container.header.signed_header;
             let validator_set: LightValidatorSet<LightValidator> = container.header.validator_set;
             let chain_id = header.header().chain_id.clone();
