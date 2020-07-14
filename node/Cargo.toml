@@ -17,7 +17,6 @@ futures = '0.3.4'
 log = '0.4.8'
 parking_lot = '0.10.0'
 structopt = '0.3.8'
-cc = '=1.0.41'
 
 [dependencies.node-template-runtime]
 path = '../runtime'

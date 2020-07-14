@@ -10,6 +10,9 @@ version = '2.0.0-rc2'
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
 
+[dependencies]
+clear_on_drop = { version = "0.2.4", features = ["no_cc"] }
+
 [dependencies.aura]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
