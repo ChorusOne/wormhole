@@ -8,8 +8,8 @@ use frame_system::{self as system, ensure_signed};
 use chrono::Utc;
 use core::time::Duration;
 use tendermint_light_client::{
-    validate_initial_signed_header_and_valset, verify_single, LightSignedHeader, LightValidatorSet,
-    TrustThresholdFraction, TrustedState, LightValidator
+    validate_initial_signed_header_and_valset, verify_single, LightSignedHeader, LightValidator,
+    LightValidatorSet, TrustThresholdFraction, TrustedState,
 };
 
 extern crate alloc;
@@ -21,8 +21,8 @@ use sp_std::vec::Vec;
 mod types;
 
 use crate::types::{
-    ConsensusState, TMClientStorageWrapper, TMCreateClientPayload, TMUpdateClientPayload,
-    TendermintClient,
+    ConsensusState, TMClientInfo, TMClientStorageWrapper, TMCreateClientPayload,
+    TMUpdateClientPayload, TendermintClient,
 };
 
 #[cfg(test)]
@@ -47,6 +47,10 @@ decl_storage! {
     trait Store for Module<T: Trait> as TendermintClientModule {
 
         TMClientStorage: map hasher(blake2_128_concat) Vec<u8> => TMClientStorageWrapper;
+
+        ClientInfoMap get(fn client_info): map hasher(blake2_128_concat) Vec<u8> => TMClientInfo;
+
+        AvailableClients get(fn clients): Vec<Vec<u8>>;
     }
 }
 
@@ -55,7 +59,7 @@ decl_event!(
     pub enum Event<T>
     where
         AccountId = <T as system::Trait>::AccountId,
-        Height = u64
+        Height = u64,
     {
         /// Just a dummy event.
         /// Event `ClientCreated`/`ClientUpdated` is declared with a parameter of the type `string` (name), `string` (chainid), `u64` (height)
@@ -148,6 +152,17 @@ decl_module! {
             // let key = hasher.result();
             info!("storing: {:#?}", tmclient);
             TMClientStorage::insert(container.client_id.as_bytes().to_vec(), TMClientStorageWrapper{client: tmclient.clone()});
+            ClientInfoMap::insert(container.client_id.as_bytes().to_vec(), TMClientInfo{
+                chain_id: tmclient.chain_id.clone(),
+                trusting_period: tmclient.trusting_period,
+                max_clock_drift: tmclient.max_clock_drift,
+                unbonding_period: tmclient.unbonding_period,
+                last_block: header.header().height.value()
+            });
+            let mut available_clients = AvailableClients::get();
+            available_clients.insert(available_clients.len(), container.client_id.as_bytes().to_vec());
+            AvailableClients::put(available_clients);
+
             // TODO: does this error if the key already exists?
 
             // Here we are raising the ClientCreated event
@@ -199,6 +214,13 @@ decl_module! {
             };
             wrapped_client.client.state = Some(state.clone());
             TMClientStorage::insert(container.client_id.as_bytes().to_vec(), wrapped_client.clone());
+            ClientInfoMap::insert(container.client_id.as_bytes().to_vec(), TMClientInfo{
+                chain_id: wrapped_client.client.chain_id.clone(),
+                trusting_period: wrapped_client.client.trusting_period,
+                max_clock_drift: wrapped_client.client.max_clock_drift,
+                unbonding_period: wrapped_client.client.unbonding_period,
+                last_block: header.header().height.value()
+            });
             Self::deposit_event(RawEvent::ClientUpdated(who, wrapped_client.client.client_id, wrapped_client.client.chain_id, header.header().height.value()));
             Ok(())
         }
