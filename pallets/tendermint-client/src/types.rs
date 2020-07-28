@@ -1,11 +1,11 @@
 use codec::{Decode, Encode, EncodeLike, Error, Input, Output};
-use sp_std::{default::Default, vec::Vec};
 use serde::{Deserialize, Serialize};
+use sp_std::{default::Default, vec::Vec};
 
 use chrono::{DateTime, Utc};
 use tendermint_light_client::{
-    Commit, LightHeader, LightSignedHeader, LightValidatorSet, TrustThresholdFraction,
-    TrustedState, LightValidator, ClientId,
+    ClientId, Commit, LightHeader, LightSignedHeader, LightValidator, LightValidatorSet,
+    TrustThresholdFraction, TrustedState,
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -62,6 +62,15 @@ impl Default for TendermintClient {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Encode, Decode)]
+pub struct TMClientInfo {
+    pub chain_id: Vec<u8>,
+    pub trusting_period: u64,
+    pub max_clock_drift: u64,
+    pub unbonding_period: u64,
+    pub last_block: u64,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct TMClientStorageWrapper {
     pub client: TendermintClient,
@@ -77,7 +86,6 @@ impl Encode for TMClientStorageWrapper {
 #[allow(deprecated)]
 impl Decode for TMClientStorageWrapper {
     fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
-
         let len = input.remaining_len().unwrap().ok_or_else(|| "meh")?;
         let mut vec: Vec<u8> = Vec::with_capacity(len);
         vec.resize_default(len);
