@@ -1,6 +1,6 @@
 use codec::{Decode, Encode, EncodeLike, Error, Input, Output};
 use serde::{Deserialize, Serialize};
-use sp_std::{default::Default, str::FromStr, vec::Vec};
+use sp_std::{default::Default, vec::Vec};
 
 use chrono::{DateTime, Utc};
 use tendermint_light_client::{
