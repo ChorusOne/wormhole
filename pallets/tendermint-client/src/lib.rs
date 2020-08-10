@@ -39,17 +39,14 @@ pub trait Trait: system::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
 
-// This pallet's storage items.
+
 decl_storage! {
-    // It is important to update your storage name so that your pallet's
-    // storage items are isolated from other pallets.
-    // ---------------------------------vvvvvvvvvvvvvv
     trait Store for Module<T: Trait> as TendermintClientModule {
-
+        /// Stores state for each client created by its client_id
         TMClientStorage: map hasher(blake2_128_concat) Vec<u8> => TMClientStorageWrapper;
-
+        /// Stores information about each client's state by its client_id
         ClientInfoMap get(fn client_info): map hasher(blake2_128_concat) Vec<u8> => TMClientInfo;
-
+        /// Lists all available clients
         AvailableClients get(fn clients): Vec<Vec<u8>>;
     }
 }
@@ -61,9 +58,8 @@ decl_event!(
         AccountId = <T as system::Trait>::AccountId,
         Height = u64,
     {
-        /// Just a dummy event.
         /// Event `ClientCreated`/`ClientUpdated` is declared with a parameter of the type `string` (name), `string` (chainid), `u64` (height)
-        /// To emit this event, we call the deposit function, from our runtime functions
+        /// and is fired when a client is created/updated respectively.
         ClientCreated(AccountId, Vec<u8>, Vec<u8>, Height),
         ClientUpdated(AccountId, Vec<u8>, Vec<u8>, Height),
     }
@@ -103,7 +99,7 @@ decl_module! {
         fn deposit_event() = default;
 
         /// Client initialisation entry point.
-        /// takes tendermint/ibc/tendermint/CreateClient message.
+        /// takes json encoded `TMCreateClientPayload` struct.
         #[weight = 100_000]
         pub fn init_client(origin, payload: Vec<u8>) -> dispatch::DispatchResult {
             // Check it was signed
@@ -116,6 +112,7 @@ decl_module! {
                 Error::<T>::DeserializeError
             })?;
 
+            // Validating if client already exists
             ensure!(!TMClientStorage::contains_key(init_client_payload.client_id.as_bytes().to_vec()), Error::<T>::ClientAlreadyInitialized);
 
             let header: LightSignedHeader = init_client_payload.header.signed_header;
@@ -127,8 +124,6 @@ decl_module! {
               Error::<T>::ValidationError
             })?;
 
-            // TODO:  validate client name
-            // TODO:  validate trust_period
             let state: ConsensusState = ConsensusState{
                 state: 	TrustedState::new(header.clone(), validator_set),
                 last_update: Utc::now(),
@@ -163,7 +158,8 @@ decl_module! {
             Ok(())
         }
 
-        /// Update client entry point.
+        /// Client initialisation entry point.
+        /// takes json encoded `TMUpdateClientPayload` struct.
         #[weight = 100_000]
         pub fn update_client(origin, payload: Vec<u8>) -> dispatch::DispatchResult {
             // Check it was signed
