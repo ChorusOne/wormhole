@@ -15,7 +15,7 @@ use tendermint_light_client::{
 extern crate alloc;
 extern crate core;
 extern crate std;
-use log::{debug, error, info};
+use log::{debug, error};
 use sp_std::vec::Vec;
 
 mod types;
@@ -106,24 +106,21 @@ decl_module! {
         /// takes tendermint/ibc/tendermint/CreateClient message.
         #[weight = 100_000]
         pub fn init_client(origin, payload: Vec<u8>) -> dispatch::DispatchResult {
-            debug!("init client");
-            debug!("Submitted payload: {:?}", &payload[..]);
-            // Check it was signed and get the signer. See also: ensure_root and ensure_none
-            let who = ensure_signed(origin)?;
-            let r: Result<_, _> = serde_json::from_slice(&payload[..]);
-            let container: TMCreateClientPayload = r.map_err(|e| {
-              error!("Deserialization Error: {}", e);
-              Error::<T>::DeserializeError
+            // Check it was signed
+            let signer = ensure_signed(origin)?;
+
+            debug!("Submitted client initialization payload: {:?}", &payload[..]);
+
+            let init_client_payload: TMCreateClientPayload = serde_json::from_slice(&payload[..]).map_err(|e| {
+                error!("Deserialization Error: {}", e);
+                Error::<T>::DeserializeError
             })?;
 
-            ensure!(!TMClientStorage::contains_key(container.client_id.as_bytes().to_vec()), Error::<T>::ClientAlreadyInitialized);
+            ensure!(!TMClientStorage::contains_key(init_client_payload.client_id.as_bytes().to_vec()), Error::<T>::ClientAlreadyInitialized);
 
-            let header: LightSignedHeader = container.header.signed_header;
-            let validator_set: LightValidatorSet<LightValidator> = container.header.validator_set;
+            let header: LightSignedHeader = init_client_payload.header.signed_header;
+            let validator_set: LightValidatorSet<LightValidator> = init_client_payload.header.validator_set;
             let chain_id = header.header().chain_id.clone();
-            let trust_period: u64 = container.trusting_period;
-            let max_clock_drift: u64 = container.max_clock_drift;
-            let unbonding_period: u64 = container.unbonding_period;
 
             validate_initial_signed_header_and_valset(&header, &validator_set).map_err(|e| {
               error!("Validation Error: {}", e);
@@ -139,20 +136,18 @@ decl_module! {
 
             let tmclient: TendermintClient = TendermintClient{
                 state: Some(state.clone()),
-                trusting_period: trust_period,
-                client_id: container.client_id.as_bytes().to_vec(),
-                max_clock_drift: max_clock_drift,
-                unbonding_period: unbonding_period,
+                trusting_period: init_client_payload.trusting_period,
+                client_id: init_client_payload.client_id.as_bytes().to_vec(),
+                max_clock_drift: init_client_payload.max_clock_drift,
+                unbonding_period: init_client_payload.unbonding_period,
                 chain_id: chain_id.as_str().as_bytes().to_vec(),
                 trust_threshold: TrustThresholdFraction::default(),
             };
 
-            // let mut hasher = Sha256::new();
-            // hasher.input();
-            // let key = hasher.result();
-            info!("storing: {:#?}", tmclient);
-            TMClientStorage::insert(container.client_id.as_bytes().to_vec(), TMClientStorageWrapper{client: tmclient.clone()});
-            ClientInfoMap::insert(container.client_id.as_bytes().to_vec(), TMClientInfo{
+            debug!("Storing newly created client: {:#?}", tmclient);
+
+            TMClientStorage::insert(init_client_payload.client_id.as_bytes().to_vec(), TMClientStorageWrapper{client: tmclient.clone()});
+            ClientInfoMap::insert(init_client_payload.client_id.as_bytes().to_vec(), TMClientInfo{
                 chain_id: tmclient.chain_id.clone(),
                 trusting_period: tmclient.trusting_period,
                 max_clock_drift: tmclient.max_clock_drift,
@@ -160,45 +155,40 @@ decl_module! {
                 last_block: header.header().height.value()
             });
             let mut available_clients = AvailableClients::get();
-            available_clients.insert(available_clients.len(), container.client_id.as_bytes().to_vec());
+            available_clients.insert(available_clients.len(), init_client_payload.client_id.as_bytes().to_vec());
             AvailableClients::put(available_clients);
 
-            // TODO: does this error if the key already exists?
-
             // Here we are raising the ClientCreated event
-            Self::deposit_event(RawEvent::ClientCreated(who, tmclient.client_id, tmclient.chain_id, header.header().height.value()));
+            Self::deposit_event(RawEvent::ClientCreated(signer, tmclient.client_id, tmclient.chain_id, header.header().height.value()));
             Ok(())
         }
 
         /// Update client entry point.
         #[weight = 100_000]
         pub fn update_client(origin, payload: Vec<u8>) -> dispatch::DispatchResult {
+            // Check it was signed
+            let signer = ensure_signed(origin)?;
 
-            // Check it was signed and get the signer. See also: ensure_root and ensure_none
-            let who = ensure_signed(origin)?;
+            debug!("Submitted update client payload: {:?}", payload);
 
-            let r: Result<_, _> = serde_json::from_slice(&payload[..]);
-            let container: TMUpdateClientPayload = r.map_err(|e| {
+            let update_client_payload: TMUpdateClientPayload = serde_json::from_slice(&payload[..]).map_err(|e| {
               error!("Deserialization Error: {}", e);
               Error::<T>::DeserializeError
             })?;
 
-            // let mut hasher = Sha256::new();
-            // hasher.input();
-            // let key = hasher.result();
+            ensure!(TMClientStorage::contains_key(update_client_payload.client_id.as_bytes().to_vec()), Error::<T>::ItemNotFound);
 
-            ensure!(TMClientStorage::contains_key(container.client_id.as_bytes().to_vec()), Error::<T>::ItemNotFound);
+            let mut wrapped_client: TMClientStorageWrapper = TMClientStorage::get(update_client_payload.client_id.as_bytes().to_vec());
+            debug!("Fetched existing client from storage: {:#?}", wrapped_client);
 
-            let mut wrapped_client: TMClientStorageWrapper = TMClientStorage::get(container.client_id.as_bytes().to_vec());
-            info!("Fetched from storage: {:#?}", wrapped_client);
-            let header: LightSignedHeader = container.header.signed_header;
-            let validator_set: LightValidatorSet<LightValidator> = container.header.validator_set;
+            let header: LightSignedHeader = update_client_payload.header.signed_header;
+            let validator_set: LightValidatorSet<LightValidator> = update_client_payload.header.validator_set;
 
             let trusted_state = verify_single(
                 wrapped_client.client.state.unwrap().state.clone(),
                 &header,
                 &validator_set,
-                &container.next_validator_set,
+                &update_client_payload.next_validator_set,
                 wrapped_client.client.trust_threshold,
                 Duration::from_secs(wrapped_client.client.trusting_period+wrapped_client.client.max_clock_drift),
                 std::time::SystemTime::now(),
@@ -207,21 +197,24 @@ decl_module! {
                 Error::<T>::ValidationError
             })?;
 
-            // TODO:  validate header
             let state: ConsensusState = ConsensusState{
                 state: trusted_state,
                 last_update: Utc::now(),
             };
+
             wrapped_client.client.state = Some(state.clone());
-            TMClientStorage::insert(container.client_id.as_bytes().to_vec(), wrapped_client.clone());
-            ClientInfoMap::insert(container.client_id.as_bytes().to_vec(), TMClientInfo{
+            TMClientStorage::insert(update_client_payload.client_id.as_bytes().to_vec(), wrapped_client.clone());
+            debug!("Stored updated client in storage: {:#?}", wrapped_client);
+
+            ClientInfoMap::insert(update_client_payload.client_id.as_bytes().to_vec(), TMClientInfo{
                 chain_id: wrapped_client.client.chain_id.clone(),
                 trusting_period: wrapped_client.client.trusting_period,
                 max_clock_drift: wrapped_client.client.max_clock_drift,
                 unbonding_period: wrapped_client.client.unbonding_period,
                 last_block: header.header().height.value()
             });
-            Self::deposit_event(RawEvent::ClientUpdated(who, wrapped_client.client.client_id, wrapped_client.client.chain_id, header.header().height.value()));
+
+            Self::deposit_event(RawEvent::ClientUpdated(signer, wrapped_client.client.client_id, wrapped_client.client.chain_id, header.header().height.value()));
             Ok(())
         }
     }
