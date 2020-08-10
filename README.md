@@ -1,6 +1,6 @@
 # Wormhole
 
-Wormhole is a substrate node containing tendermint-client pallet, which contains [tendermint-light-client].
+Wormhole is a substrate node containing tendermint-client pallet, which contains [tendermint_light_client].
 Since this repository builds upon original [node-template] repository, you can read documentation on how to run the node [here](https://github.com/substrate-developer-hub/substrate-node-template/blob/master/README.md).
 
 ## tendermint-client pallet interfaces
