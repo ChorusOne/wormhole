@@ -53,6 +53,7 @@ pub fn development_config() -> ChainSpec {
 				get_account_id_from_seed::<sr25519::Public>("Bob"),
 				get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
 				get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
+				get_account_id_from_seed::<sr25519::Public>("flat reflect table identify forward west boat furnace similar million list wood"),
 			],
 			true,
 		),
