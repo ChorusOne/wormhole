@@ -50,10 +50,10 @@ pub fn development_config() -> ChainSpec {
 			],
 			get_account_id_from_seed::<sr25519::Public>("Alice"),
 			vec![
-                {
-                    let test_pair = sr25519::Pair::from_phrase("flat reflect table identify forward west boat furnace similar million list wood", None).unwrap().0;
-                    AccountPublic::from(test_pair.public()).into_account()
-                },
+                		{
+                    			let test_pair = sr25519::Pair::from_phrase("flat reflect table identify forward west boat furnace similar million list wood", None).unwrap().0;
+                    			AccountPublic::from(test_pair.public()).into_account()
+                		},
 				get_account_id_from_seed::<sr25519::Public>("Alice"),
 				get_account_id_from_seed::<sr25519::Public>("Bob"),
 				get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
@@ -82,9 +82,9 @@ pub fn local_testnet_config() -> ChainSpec {
 			get_account_id_from_seed::<sr25519::Public>("Alice"),
 			vec![
 				{
-                    let test_pair = sr25519::Pair::from_phrase("flat reflect table identify forward west boat furnace similar million list wood", None).unwrap().0;
-                    AccountPublic::from(test_pair.public()).into_account()
-                },
+                    			let test_pair = sr25519::Pair::from_phrase("flat reflect table identify forward west boat furnace similar million list wood", None).unwrap().0;
+                    			AccountPublic::from(test_pair.public()).into_account()
+                		},
 				get_account_id_from_seed::<sr25519::Public>("Alice"),
 				get_account_id_from_seed::<sr25519::Public>("Bob"),
 				get_account_id_from_seed::<sr25519::Public>("Charlie"),
