@@ -7,6 +7,7 @@ use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{Verify, IdentifyAccount};
 use sc_service::ChainType;
+use sp_runtime::MultiSignature::Sr25519;
 
 // Note this is the URL for the telemetry server
 //const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -49,6 +50,10 @@ pub fn development_config() -> ChainSpec {
 			],
 			get_account_id_from_seed::<sr25519::Public>("Alice"),
 			vec![
+                {
+                    let test_pair = sr25519::Pair::from_phrase("flat reflect table identify forward west boat furnace similar million list wood", None).unwrap().0;
+                    AccountPublic::from(test_pair.public()).into_account()
+                },
 				get_account_id_from_seed::<sr25519::Public>("Alice"),
 				get_account_id_from_seed::<sr25519::Public>("Bob"),
 				get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
@@ -76,6 +81,10 @@ pub fn local_testnet_config() -> ChainSpec {
 			],
 			get_account_id_from_seed::<sr25519::Public>("Alice"),
 			vec![
+				{
+                    let test_pair = sr25519::Pair::from_phrase("flat reflect table identify forward west boat furnace similar million list wood", None).unwrap().0;
+                    AccountPublic::from(test_pair.public()).into_account()
+                },
 				get_account_id_from_seed::<sr25519::Public>("Alice"),
 				get_account_id_from_seed::<sr25519::Public>("Bob"),
 				get_account_id_from_seed::<sr25519::Public>("Charlie"),
