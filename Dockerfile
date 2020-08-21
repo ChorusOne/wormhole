@@ -22,7 +22,7 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
 	rustup default stable && \
 	rustup default $RUST_TOOLCHAIN
 
-RUN export PATH="$PATH:$HOME/.cargo/bin" && cargo build "--$PROFILE" -j8
+RUN export PATH="$PATH:$HOME/.cargo/bin" && cargo build "--$PROFILE" -j3
 
 # ===== SECOND STAGE ======
 
