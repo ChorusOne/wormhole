@@ -88,7 +88,7 @@ impl Decode for TMClientStorageWrapper {
     fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
         let len = input.remaining_len().unwrap().ok_or_else(|| "meh")?;
         let mut vec: Vec<u8> = Vec::with_capacity(len);
-        vec.resize_default(len);
+        vec.resize_with(len, Default::default);
         let buf = vec.as_mut_slice();
         input.read(buf)?;
         Ok(TMClientStorageWrapper {
