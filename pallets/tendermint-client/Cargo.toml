@@ -33,15 +33,11 @@ git = 'https://github.com/paritytech/substrate.git'
 tag = 'v2.0.1'
 version = '2.0.1'
 
-#[dependencies.tendermint_light_client]
-#default-features = false
-#git = "https://github.com/ChorusOne/tendermint_light_client.git"
-#branch = "master"
-#version = "0.3.0"
-
 [dependencies.tendermint_light_client]
 default-features = false
-path = "/home/admin/Projects/tendermint-light-client"
+git = "https://github.com/ChorusOne/tendermint_light_client.git"
+branch = "master"
+version = "0.4.0"
 
 [dev-dependencies.sp-core]
 default-features = false
