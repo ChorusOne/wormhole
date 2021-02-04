@@ -23,7 +23,7 @@ use node_template_runtime::Block;
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
-		"Substrate Node".into()
+		"Wormhole Node".into()
 	}
 
 	fn impl_version() -> String {
@@ -39,7 +39,7 @@ impl SubstrateCli for Cli {
 	}
 
 	fn support_url() -> String {
-		"support.anonymous.an".into()
+		"https://chorus.one/wormhole".into()
 	}
 
 	fn copyright_start_year() -> i32 {
