@@ -4,7 +4,7 @@
 FROM phusion/baseimage:0.10.2 as builder
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV RUST_TOOLCHAIN=nightly-2020-05-31
+ENV RUST_TOOLCHAIN=nightly-2020-11-16
 
 ARG PROFILE=release
 WORKDIR /wormhole

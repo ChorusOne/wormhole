@@ -1,5 +1,4 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-#![feature(vec_resize_default)]
 
 /// Wormhole TendermintClient Pallet. Allows verification of Tendermint block headers on the substrate chain.
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, dispatch, ensure};
